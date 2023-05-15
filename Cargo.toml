@@ -34,6 +34,8 @@ pin-project = "1"
 # Ethers
 ethers = {version = "2.0.0", default-features = false}
 
+log = "0.4.17"
+
 [dependencies.uuid]
 features = [
   "v4", # Lets you generate random UUIDs

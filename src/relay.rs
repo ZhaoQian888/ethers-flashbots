@@ -9,7 +9,10 @@ use ethers::core::{
 use ethers::signers::Signer;
 use reqwest::{Client, Error as ReqwestError};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::{
+    fmt::Debug,
+    sync::atomic::{AtomicU64, Ordering},
+};
 use thiserror::Error;
 use url::Url;
 
@@ -68,7 +71,7 @@ impl<S: Signer> Relay<S> {
 
     /// Sends a request with the provided method to the relay, with the
     /// parameters serialized as JSON.
-    pub async fn request<T: Serialize + Send + Sync, R: DeserializeOwned>(
+    pub async fn request<T: Serialize + Send + Sync + Debug, R: DeserializeOwned>(
         &self,
         method: &str,
         params: T,
@@ -77,9 +80,8 @@ impl<S: Signer> Relay<S> {
         self.id.store(next_id, Ordering::SeqCst);
 
         let payload = Request::new(next_id, method, params);
-
+        log::info!("flashbot exec request = {:?}", payload);
         let mut req = self.client.post(self.url.as_ref());
-
         if let Some(signer) = &self.signer {
             let signature = signer
                 .sign_message(format!(
@@ -105,6 +107,7 @@ impl<S: Signer> Relay<S> {
         match status {
             Err(err) => {
                 let text = res.text().await?;
+                log::info!("flashbot middleware exec err response = {}", text);
                 let status_code = err.status().unwrap();
                 if status_code.is_client_error() {
                     // Client error (400-499)
@@ -116,6 +119,7 @@ impl<S: Signer> Relay<S> {
             }
             Ok(_) => {
                 let text = res.text().await?;
+                log::info!("flashbot middleware exec success response = {}", text);
                 let res: Response<R> = serde_json::from_str(&text)
                     .map_err(|err| RelayError::ResponseSerdeJson { err, text })?;
 
@@ -142,14 +146,14 @@ pub(crate) struct SendBundleResponse {
     pub(crate) bundle_hash: BundleHash,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct GetBundleStatsParams {
     pub(crate) bundle_hash: BundleHash,
     pub(crate) block_number: U64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct GetUserStatsParams {
     pub(crate) block_number: U64,

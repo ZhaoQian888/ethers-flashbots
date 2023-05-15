@@ -13,11 +13,11 @@ use ethers::{
     providers::{Middleware, MiddlewareError, PendingTransaction},
     signers::Signer,
 };
-use thiserror::Error;
+
 use url::Url;
 
 /// Errors for the Flashbots middleware.
-#[derive(Error, Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum FlashbotsMiddlewareError<M: Middleware, S: Signer> {
     /// Some parameters were missing.
     ///
